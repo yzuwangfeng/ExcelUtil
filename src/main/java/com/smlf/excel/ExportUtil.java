@@ -135,5 +135,46 @@ public class ExportUtil {
         }
 		
 	}
+	
+	/**
+	 * 模版不预留数据行，需手动创建数据行时（适用于多表头的报表）
+	 * @param workbook 
+	 * @param sheetIndex
+	 * @param dataStartRowIndex
+	 * @param dataset
+	 * @return
+	 */
+	public static Workbook exportAndCreateNewRow(Workbook workbook, int sheetIndex, int dataStartRowIndex, List<?>... dataset){
+		// dataset 不允许为空
+        if (dataset==null || dataset.length==0) {
+            throw new RuntimeException("导出错误 ------------- 数据集不允许为空");
+        }
+        List<?> sheetDataList = dataset[0];
+        
+        Class<?> dataModelClass = sheetDataList.get(0).getClass();
+        Dataset excelSheet = dataModelClass.getAnnotation(Dataset.class);
+
+        // 设置 sheet 名称
+        String sheetName = excelSheet.sheetName();
+        Sheet sheet = workbook.getSheetAt(sheetIndex);
+        if(sheet == null){
+        	sheet = workbook.createSheet();
+        }
+        workbook.setSheetName(sheetIndex, sheetName);
+        //创建预留行
+        int maxSize = 0;
+        for(List<?> dataList : dataset){
+        	if(dataList.size()>maxSize) {
+        		maxSize = dataList.size();
+        	}
+        }
+        for(int i = 0;i<maxSize;i++) {
+        	sheet.createRow(dataStartRowIndex);
+        }
+        for(List<?> dataList : dataset){
+        	write2Sheet(workbook, dataStartRowIndex, dataList, sheet);
+        }
+		return workbook;
+	}
 
 }
